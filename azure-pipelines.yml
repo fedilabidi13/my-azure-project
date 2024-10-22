@@ -1,18 +1,45 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
-pool: fadi-pool
+pool:
+  name: fadi-pool
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
+# Step 1: Check Maven and Java versions
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    echo "Checking Maven version:"
+    mvn -v
+    echo "Checking Java version:"
+    java -version
+  displayName: 'Check Maven and Java Versions'
+
+# Step 2: Prepare SonarQube for Code Quality Analysis
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'sonarr'  # SonarQube service connection name
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i'  # Replace with your SonarQube project key
+    cliProjectVersion: '1.0'
+    extraProperties: |
+      sonar.java.binaries=target/classes
+      sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+  displayName: 'Prepare SonarQube for Code Quality Analysis'
+
+# Step 3: Build the Java project and generate JaCoCo code coverage report
+- script: |
+    mvn clean verify jacoco:report
+  displayName: 'Build Java App with Maven and Generate JaCoCo Report'
+
+# Step 4: Execute SonarQube analysis
+- task: SonarQubeAnalyze@5
+  displayName: 'Run SonarQube Analysis'
+
+# Step 5: Publish JaCoCo Code Coverage Results
+- task: PublishCodeCoverageResults@2
+  inputs:
+    codeCoverageTool: 'JaCoCo'  # Specify the code coverage tool
+    summaryFileLocation: 'target/site/jacoco/jacoco.xml'  # Adjust path based on your project structure
+    reportDirectory: 'target/site/jacoco'  # Directory containing the report files
+    failIfCoverageEmpty: true  # Fail the build if no coverage found
+  displayName: 'Publish JaCoCo Code Coverage Results'
