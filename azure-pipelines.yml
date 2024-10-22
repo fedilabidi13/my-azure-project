@@ -32,28 +32,13 @@ stages:
                 maven | "$(Agent.OS)"
                 maven
 
-          - task: SonarQubePrepare@6
-            inputs:
-              SonarQube: 'sonarr'
-              scannerMode: 'Other'
-              configMode: file
-              extraProperties: |
-                sonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i
-                sonar.projectName=my-azure-devops-project
-                sonar.language=java
-                sonar.sourceEncoding=UTF-8
-                sonar.test=core/src/test/**
-                sonar.java.binaries=.
-                sonar.coverage.jacoco.xmlReportPaths=$(JACOCO_CODECOVERAGE)
-
-          # Perform Maven build
-          - task: Maven@4
-            displayName: Maven Build
-            inputs:
-              goals: '-B package'
-              publishJUnitResults: true
-              mavenOpts: '-Xmx2048m $(MAVEN_OPTS)'
-              sonarQubeRunAnalysis: true
+          - script: |
+              mvn clean verify sonar:sonar \
+                -Dsonar.host.url=http://68.219.181.193/ \
+                -Dsonar.login=admin \
+                -Dsonar.password=adminadmin \
+                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i
+            displayName: 'Run Maven with SonarQube Analysis'
 
           - task: SonarQubePublish@6
             inputs:
