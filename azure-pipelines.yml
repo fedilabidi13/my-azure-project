@@ -49,11 +49,9 @@ stages:
             inputs:
               testResultsFormat: 'JUnit'
               testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
-          - task: reportgenerator@5
-            displayName: 'Generate Coverage Report'
+          - task: PublishCodeCoverageResults@2
             inputs:
-              reports: 'target/site/jacoco/jacoco.xml'  # Path to the JaCoCo report
-              targetdir: 'coveragereport'  # Directory to save the report
-              reporttypes: 'HtmlInline_AzurePipelines;Cobertura'  # Desired report formats
-              sourcedirs: 'src/main/java'  # Path to your source files
-              publishCodeCoverageResults: false  # Don't publish 
+              codeCoverageTool: 'JaCoCo'
+              summaryFileLocation: '**/target/site/jacoco/jacoco.xml'  # Path to the JaCoCo XML file
+              reportDirectory: '**/target/site/jacoco'  # Directory containing HTML reports
+              failIfCoverageEmpty: true
