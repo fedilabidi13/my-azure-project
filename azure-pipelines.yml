@@ -42,7 +42,7 @@ stages:
                 -Dsonar.host.url=http://68.219.181.193/ \
                 -Dsonar.login=admin \
                 -Dsonar.password=adminadmin \
-                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && ls target/site/jacoco
+                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && cp target/site/jacoco/jacoco.xml /home/azureuser
             displayName: 'Run Maven with SonarQube Analysis'
           - task: PublishTestResults@2
             inputs:
@@ -50,5 +50,5 @@ stages:
               testResultsFiles: '**/target/site/**/*.xml'
           - task: PublishCodeCoverageResults@2
             inputs:
-              summaryFileLocation: 'target/site/jacoco/jacoco.xml'
+              summaryFileLocation: '/home/azureuser/jacoco.xml'
               pathToSources: 'src/main/java/com/omery/projectAtm'
