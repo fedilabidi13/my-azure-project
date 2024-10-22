@@ -47,7 +47,7 @@ stages:
           - task: PublishTestResults@2
             inputs:
               testResultsFormat: 'JUnit'
-              testResultsFiles: '**/target/site/jacoco/jacoco.xml'
+              testResultsFiles: '**/target/site/**/*.xml'
           - task: PublishCodeCoverageResults@2
             inputs:
               summaryFileLocation: 'target/site/jacoco/jacoco.xml'
