@@ -29,9 +29,15 @@ steps:
 # Step 3: Modify SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name
 - script: |
     echo "Modifying SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name"
-    decoded_params=$SONARQUBE_SCANNER_PARAMS
+    if [[ $SONARQUBE_SCANNER_PARAMS == *"{"* && $SONARQUBE_SCANNER_PARAMS == *"}"* ]]; then
+      # Assume JSON string
+      decoded_params=$SONARQUBE_SCANNER_PARAMS
+    else
+      decoded_params=$(echo $SONARQUBE_SCANNER_PARAMS | base64 --decode)
+    fi
+
     modified_params=$(echo $decoded_params | jq 'del(.["sonar.branch.name"])')
-    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params)
+    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params | base64)
   displayName: 'Remove sonar.branch.name from SONARQUBE_SCANNER_PARAMS'
 # Step 4: Build the Java project and generate JaCoCo code coverage report
 - script: |
