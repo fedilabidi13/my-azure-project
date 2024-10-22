@@ -9,7 +9,10 @@ steps:
     echo "Checking Java version:"
     java -version
   displayName: 'Check Maven and Java Versions'
-
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y jq
+  displayName: 'Install jq'
 # Step 2: Prepare SonarQube for Code Quality Analysis
 - task: SonarQubePrepare@5
   inputs:
@@ -26,11 +29,10 @@ steps:
 # Step 3: Modify SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name
 - script: |
     echo "Modifying SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name"
-    decoded_params=$(echo $SONARQUBE_SCANNER_PARAMS | base64 --decode)
+    decoded_params=$SONARQUBE_SCANNER_PARAMS
     modified_params=$(echo $decoded_params | jq 'del(.["sonar.branch.name"])')
-    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params | base64)
+    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params)
   displayName: 'Remove sonar.branch.name from SONARQUBE_SCANNER_PARAMS'
-
 # Step 4: Build the Java project and generate JaCoCo code coverage report
 - script: |
     mvn clean verify jacoco:report
