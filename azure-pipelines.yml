@@ -1,58 +1,65 @@
-pool:
-  name: fadi-pool
+pool: fadi-pool
 
-steps:
-# Step 1: Check Maven and Java versions
-- script: |
-    echo "Checking Maven version:"
-    mvn -v
-    echo "Checking Java version:"
-    java -version
-  displayName: 'Check Maven and Java Versions'
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y jq
-  displayName: 'Install jq'
-# Step 2: Prepare SonarQube for Code Quality Analysis
-- task: SonarQubePrepare@5
-  inputs:
-    SonarQube: 'sonarr'  # SonarQube service connection name
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i'
-    cliProjectVersion: '1.0'
-    extraProperties: |
-      sonar.java.binaries=target/classes
-      sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-  displayName: 'Prepare SonarQube for Code Quality Analysis'
+variables:
+  - name: MAVEN_CACHE_FOLDER
+    value: $(HOME)/.m2/repository
+  - name: MAVEN_OPTS
+    value: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
+  - name: JACOCO_CODECOVERAGE
+    value: $(System.DefaultWorkingDirectory)/core/target/site/jacoco/jacoco.xml
 
-# Step 3: Modify SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name
-- script: |
-    echo "Modifying SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name"
-    if [[ $SONARQUBE_SCANNER_PARAMS == *"{"* && $SONARQUBE_SCANNER_PARAMS == *"}"* ]]; then
-      # Assume JSON string
-      decoded_params=$SONARQUBE_SCANNER_PARAMS
-    else
-      decoded_params=$(echo $SONARQUBE_SCANNER_PARAMS | base64 --decode)
-    fi
+stages:
+  - stage: BuildAndTest
+    displayName: Build and Test Application
+    jobs:
+      - job: BuildAndTestJob
+        displayName: Build and Test Job
+        pool:
+          name: fadi-pool  # This references your hosted runner
+        steps:
+          - checkout: self
+            persistCredentials: true
+            clean: true
+            fetchDepth: 0
 
-    modified_params=$(echo $decoded_params | jq 'del(.["sonar.branch.name"])')
-    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params | base64)
-  displayName: 'Remove sonar.branch.name from SONARQUBE_SCANNER_PARAMS'
-# Step 4: Build the Java project and generate JaCoCo code coverage report
-- script: |
-    mvn clean verify jacoco:report
-  displayName: 'Build Java App with Maven and Generate JaCoCo Report'
+          # Set up Maven repo cache
+          - task: Cache@2
+            displayName: Cache Maven Local Repo
+            inputs:
+              key: maven | "$(Agent.OS)" | **/pom.xml
+              path: $(MAVEN_CACHE_FOLDER)
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+                maven
 
-# Step 5: Execute SonarQube analysis
-- task: SonarQubeAnalyze@5
-  displayName: 'Run SonarQube Analysis'
+          - task: SonarQubePrepare@6
+            inputs:
+              SonarQube: 'sonarr'
+              scannerMode: 'Other'
+              configMode: file
+              extraProperties: |
+                sonar.projectKey=my-project-key
+                sonar.projectName=my-project-name
+                sonar.language=java
+                sonar.sourceEncoding=UTF-8
+                sonar.test=core/src/test/**
+                sonar.java.binaries=.
+                sonar.coverage.jacoco.xmlReportPaths=$(JACOCO_CODECOVERAGE)
 
-# Step 6: Publish JaCoCo Code Coverage Results
-- task: PublishCodeCoverageResults@2
-  inputs:
-    codeCoverageTool: 'JaCoCo'
-    summaryFileLocation: 'target/site/jacoco/jacoco.xml'
-    reportDirectory: 'target/site/jacoco'
-    failIfCoverageEmpty: true
-  displayName: 'Publish JaCoCo Code Coverage Results'
+          # Perform Maven build
+          - task: Maven@4
+            displayName: Maven Build
+            inputs:
+              goals: '-B package'
+              publishJUnitResults: true
+              mavenOpts: '-Xmx2048m $(MAVEN_OPTS)'
+              sonarQubeRunAnalysis: true
+
+          - task: SonarQubePublish@6
+            inputs:
+              pollingTimeoutSec: '300'
+
+          - task: PublishCodeCoverageResults@2
+            inputs:
+              summaryFileLocation: '$(JACOCO_CODECOVERAGE)'
+              failIfCoverageEmpty: true
