@@ -42,7 +42,7 @@ stages:
                 -Dsonar.host.url=http://68.219.181.193/ \
                 -Dsonar.login=admin \
                 -Dsonar.password=adminadmin \
-                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i
+                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && ls target/site/jacoco
             displayName: 'Run Maven with SonarQube Analysis'
 
           - task: PublishCodeCoverageResults@2
