@@ -44,12 +44,16 @@ stages:
                 -Dsonar.password=adminadmin \
                 -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && cp target/site/jacoco/jacoco.xml /home/azureuser
             displayName: 'Run Maven with SonarQube Analysis'
+
           - task: PublishTestResults@2
             inputs:
               testResultsFormat: 'JUnit'
               testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
-          - task: PublishCodeCoverageResults@2
+          - task: reportgenerator@5
+            displayName: 'Generate Coverage Report'
             inputs:
-              codeCoverageTool: 'Cobertura'
-              summaryFileLocation: '**/target/site/cobertura/coverage.xml'
-              reportDirectory: '**/target/site/cobertura'
+              reports: 'target/site/jacoco/jacoco.xml'  # Path to the JaCoCo report
+              targetdir: 'coveragereport'  # Directory to save the report
+              reporttypes: 'HtmlInline_AzurePipelines;Cobertura'  # Desired report formats
+              sourcedirs: 'src/main/java'  # Path to your source files
+              publishCodeCoverageResults: false  # Don't publish 
