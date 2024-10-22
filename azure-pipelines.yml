@@ -1,4 +1,3 @@
-
 pool:
   name: fadi-pool
 
@@ -17,27 +16,35 @@ steps:
     SonarQube: 'sonarr'  # SonarQube service connection name
     scannerMode: 'CLI'
     configMode: 'manual'
-    cliProjectKey: 'my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i'  # Replace with your SonarQube project key
+    cliProjectKey: 'my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i'
     cliProjectVersion: '1.0'
     extraProperties: |
       sonar.java.binaries=target/classes
       sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
   displayName: 'Prepare SonarQube for Code Quality Analysis'
 
-# Step 3: Build the Java project and generate JaCoCo code coverage report
+# Step 3: Modify SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name
+- script: |
+    echo "Modifying SONARQUBE_SCANNER_PARAMS to remove sonar.branch.name"
+    decoded_params=$(echo $SONARQUBE_SCANNER_PARAMS | base64 --decode)
+    modified_params=$(echo $decoded_params | jq 'del(.["sonar.branch.name"])')
+    export SONARQUBE_SCANNER_PARAMS=$(echo $modified_params | base64)
+  displayName: 'Remove sonar.branch.name from SONARQUBE_SCANNER_PARAMS'
+
+# Step 4: Build the Java project and generate JaCoCo code coverage report
 - script: |
     mvn clean verify jacoco:report
   displayName: 'Build Java App with Maven and Generate JaCoCo Report'
 
-# Step 4: Execute SonarQube analysis
+# Step 5: Execute SonarQube analysis
 - task: SonarQubeAnalyze@5
   displayName: 'Run SonarQube Analysis'
 
-# Step 5: Publish JaCoCo Code Coverage Results
+# Step 6: Publish JaCoCo Code Coverage Results
 - task: PublishCodeCoverageResults@2
   inputs:
-    codeCoverageTool: 'JaCoCo'  # Specify the code coverage tool
-    summaryFileLocation: 'target/site/jacoco/jacoco.xml'  # Adjust path based on your project structure
-    reportDirectory: 'target/site/jacoco'  # Directory containing the report files
-    failIfCoverageEmpty: true  # Fail the build if no coverage found
+    codeCoverageTool: 'JaCoCo'
+    summaryFileLocation: 'target/site/jacoco/jacoco.xml'
+    reportDirectory: 'target/site/jacoco'
+    failIfCoverageEmpty: true
   displayName: 'Publish JaCoCo Code Coverage Results'
