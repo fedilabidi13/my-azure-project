@@ -44,7 +44,9 @@ stages:
                 -Dsonar.password=adminadmin \
                 -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && ls target/site/jacoco
             displayName: 'Run Maven with SonarQube Analysis'
-
+          - task: SonarQubePublish@7
+            inputs:
+              pollingTimeoutSec: '300'
           - task: PublishCodeCoverageResults@2
             inputs:
               summaryFileLocation: 'target/site/jacoco/jacoco.xml'
