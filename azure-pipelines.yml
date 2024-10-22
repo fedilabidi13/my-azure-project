@@ -38,8 +38,8 @@ stages:
               scannerMode: 'Other'
               configMode: file
               extraProperties: |
-                sonar.projectKey=my-project-key
-                sonar.projectName=my-project-name
+                sonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i
+                sonar.projectName=my-azure-devops-project
                 sonar.language=java
                 sonar.sourceEncoding=UTF-8
                 sonar.test=core/src/test/**
