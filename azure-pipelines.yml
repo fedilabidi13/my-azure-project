@@ -50,6 +50,7 @@ stages:
               testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
           - task: PublishCodeCoverageResults@2
             inputs:
+              codeCoverageTool: 'JaCoCo'
               summaryFileLocation: '**/target/site/jacoco/jacoco.xml'
               reportDirectory: '**/target/site/jacoco'
               pathToSources: 'src/main/java/com/omery/projectAtm'
