@@ -15,7 +15,7 @@ stages:
       - job: BuildAndTestJob
         displayName: Build and Test Job
         pool:
-          name: fadi-pool  # This references your hosted runner
+          name: fadi-pool
         steps:
           - checkout: self
             persistCredentials: true
@@ -39,10 +39,6 @@ stages:
                 -Dsonar.password=adminadmin \
                 -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i
             displayName: 'Run Maven with SonarQube Analysis'
-
-          - task: SonarQubePublish@6
-            inputs:
-              pollingTimeoutSec: '300'
 
           - task: PublishCodeCoverageResults@2
             inputs:
