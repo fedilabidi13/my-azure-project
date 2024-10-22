@@ -52,3 +52,5 @@ stages:
               reportDirectory: '$(System.DefaultWorkingDirectory)/target/site/jacoco/'
               pathToSources: '$(System.DefaultWorkingDirectory)/src/main/java/'
               failIfCoverageEmpty: false
+          - script: |
+              cat $(System.DefaultWorkingDirectory)/target/site/jacoco/jacoco.xml
