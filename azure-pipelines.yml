@@ -13,42 +13,43 @@ variables:
   - name: JACOCO_CODECOVERAGE
     value: $(System.DefaultWorkingDirectory)/target/site/jacoco/jacoco.xml
 
-stages:
-  - stage: BuildAndTest
-    displayName: Build and Test Application
-    jobs:
-      - job: BuildAndTestJob
-        displayName: Build and Test Job
-        pool:
-          name: fadi-pool
-        steps:
-          - checkout: self
-            persistCredentials: true
-            clean: true
-            fetchDepth: 0
+steps:
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'clean verify'
+    options: '-Dmaven.test.failure.ignore=true'
+    publishJUnitResults: true
+    testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+  displayName: 'Run Maven Build'
 
-          # Set up Maven repo cache
-          - task: Cache@2
-            displayName: Cache Maven Local Repo
-            inputs:
-              key: maven | "$(Agent.OS)" | **/pom.xml
-              path: $(MAVEN_CACHE_FOLDER)
-              restoreKeys: |
-                maven | "$(Agent.OS)"
-                maven
+# Prepare SonarQube Analysis
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'sonarr'  # Replace with your service connection name
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i'
+    cliSources: 'src'
+    extraProperties: |
+      sonar.java.binaries=target/classes
+  displayName: 'Prepare SonarQube Analysis'
 
-          - script: |
-              ls && pwd && mvn clean verify sonar:sonar \
-                -Dsonar.host.url=http://68.219.181.193/ \
-                -Dsonar.login=admin \
-                -Dsonar.password=adminadmin \
-                -Dsonar.projectKey=my-azure-devops-project_my-azure-devops-project_AZK0yBzzKN4gu2Kgjo-i && cp target/site/jacoco/jacoco.xml /home/azureuser
-            displayName: 'Run Maven with SonarQube Analysis'
-          - task: PublishTestResults@2
-            inputs:
-              testResultsFormat: 'JUnit'
-              testResultsFiles: '**/target/site/**/*.xml'
-          - task: PublishCodeCoverageResults@2
-            inputs:
-              summaryFileLocation: '/home/azureuser/jacoco.xml'
-              pathToSources: 'src/main/java/com/omery/projectAtm'
+# Run SonarQube Analysis
+- task: SonarQubeAnalyze@5
+  displayName: 'Run SonarQube Analysis'
+
+# Publish SonarQube Quality Gate Results
+- task: SonarQubePublish@5
+  inputs:
+    pollingTimeoutSec: '300'
+  displayName: 'Publish SonarQube Quality Gate Result'
+
+# Publish Code Coverage Results (JaCoCo)
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: 'JaCoCo'
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/target/site/jacoco/jacoco.xml'
+    reportDirectory: '$(System.DefaultWorkingDirectory)/**/target/site/jacoco'
+    failIfCoverageEmpty: true
+  displayName: 'Publish JaCoCo Code Coverage Report'
